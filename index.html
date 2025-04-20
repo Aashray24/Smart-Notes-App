@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Notes App</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+<style>
+ #introOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #000;
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 2.5rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  z-index: 9999;
+  opacity: 1;
+  transition: opacity 1.5s ease;
+  pointer-events: auto; /* important for click events if needed */
+}
+
+/* AFTER FADE-OUT animation ends, we’ll set this class dynamically via JS */
+#introOverlay.hidden {
+  visibility: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+
+
+
+#introOverlay span {
+  opacity: 0;
+  animation: introFadeIn 1s forwards;
+  animation-delay: 0.5s;
+  transition: opacity 1.5s ease;
+}
+#introOverlay.fade-out {
+  animation: cinematicFadeOut 1.4s ease-in-out forwards;
+}
+
+#introOverlay.fade-out span {
+  animation: textVanish 1.2s ease-in-out forwards;
+  animation-delay: 0.3s;
+}
+
+@keyframes cinematicFadeOut {
+  0% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+    filter: blur(0px);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.95) rotate(5deg);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.85) rotate(-10deg);
+    filter: blur(6px);
+    /* REMOVE visibility */
+  }
+}
+
+
+@keyframes textVanish {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px) rotateX(60deg) scale(0.8);
+  }
+}
+
+
+
+
+@keyframes introFadeIn {
+  to { opacity: 1; }
+}
+
+
+
+body.theme-aurora {
+  background: radial-gradient(circle at top left, #1a2a6c, #b21f1f, #fdbb2d);
+  background-size: 400% 400%;
+  animation: auroraFade 12s ease infinite;
+  color: #ffffff;
+  transition: all 1s ease-in-out;
+}
+
+body.theme-aurora input,
+body.theme-aurora textarea,
+body.theme-aurora select {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid #ffb347;
+  transition: background-color 0.6s ease, color 0.6s ease, border 0.6s ease;
+}
+
+body.theme-aurora .note-card,
+body.theme-aurora .card {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  color: #ffffff;
+}
+
+body.theme-aurora h1,
+body.theme-aurora h4,
+body.theme-aurora label {
+  color: #ffe;
+}
+
+@keyframes auroraFade {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+
+    body.theme-matrix {
+  animation: fadeTheme 0.8s ease-in-out;
+  transition: background 0.6s ease, color 0.6s ease;
+  background: #0a0a0a;
+  color: #f5f5dc;
+  transition: background 0.6s ease, color 0.6s ease;
+}
+body.theme-matrix .form-control {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+body.theme-matrix .form-control:focus {
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #00ff00;
+  border: 1px solid #00ff00;
+  box-shadow: 0 0 5px #00ff00;
+}
+
+body:not(.theme-matrix):not(.theme-pastel):not(.theme-aurora) .form-control:focus {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid #ffffff;
+  box-shadow: 0 0 5px #ffffff;
+}
+
+body.theme-matrix .note-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-image: linear-gradient(45deg, #ffff99, #ffee88, #ffcc00) 1;
+  color: #fffacd;
+}
+body.theme-matrix h1,
+body.theme-matrix h4,
+body.theme-matrix .animated-heading {
+  color: #ffffcc !important;
+}
+body.theme-matrix .form-control {
+  background-color: #1a1a1a;
+  color: #00ff00;
+}
+body:not(.theme-matrix):not(.theme-pastel):not(.theme-aurora) .form-control::placeholder {
+  color: #ffffff;
+  text-shadow: 0 0 5px #ffffff;
+  opacity: 1;
+}
+
+body:not(.theme-matrix):not(.theme-pastel):not(.theme-aurora) .form-control {
+  border: 1px solid #ffffff;
+  box-shadow: 0 0 8px #ffffff;
+  color: #ffffff;
+}
+
+body.theme-matrix .note-card {
+  background: rgba(0, 255, 0, 0.1);
+  border-image: linear-gradient(45deg, #00ff00, #33ff33, #66ff66) 1;
+  color: #00ff00;
+}
+    body.theme-pastel {
+  animation: fadeTheme 0.8s ease-in-out;
+  transition: background 0.6s ease, color 0.6s ease;
+  background: linear-gradient(135deg, #fceabb, #f8b500);
+  color: #2e2e2e;
+  transition: background 0.6s ease, color 0.6s ease;
+}
+body.theme-matrix ::placeholder {
+  color: #00ff00;
+  text-shadow: 0 0 5px #00ff00;
+  opacity: 1; /* Ensure placeholder is visible */
+}
+
+body.theme-matrix .form-control {
+  background-color: #1a1a1a;
+  color: #00ff00;
+  border: 1px solid #00ff00;
+  box-shadow: 0 0 8px #00ff00;
+}
+
+body.theme-pastel .form-control {
+  background-color: rgba(255, 255, 255, 0.6);
+  color: #2e2e2e;
+}
+body.theme-pastel .note-card {
+  background: rgba(255, 255, 255, 0.5);
+  border-image: linear-gradient(45deg, #fbc2eb, #a6c1ee, #fcd1c8) 1;
+  color: #2e2e2e;
+}  
+    .animated-heading {
+      font-weight: bold;
+      font-style: italic;
+      background: linear-gradient(270deg, #ff6ec4, #7873f5, #38bdf8, #4ade80);
+      background-size: 600% 600%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: animatedGradient 8s ease infinite;
+    }
+    @keyframes animatedGradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    body {
+  transition: background 0.8s ease-in-out, color 0.8s ease-in-out, filter 0.8s ease-in-out;
+  transition: background 0.6s ease, color 0.6s ease;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      background-size: 600% 600%;
+      animation: backgroundAnimation 20s ease infinite;
+      color: #1e293b;
+      overflow-x: hidden;
+      transition: background 0.4s ease, color 0.4s ease;
+    }
+    .dark-mode {
+      background: linear-gradient(135deg, #000000, #1f1c2c, #2c3e50);
+      color: #f8fafc;
+    }
+    @keyframes backgroundAnimation {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes fadeTheme {
+  0% {
+    opacity: 0.6;
+    filter: blur(3px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+      
+    .note-card {
+      border-radius: 16px;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(12px);
+      border: 3px solid;
+      border-image: linear-gradient(45deg, #ff6ec4, #7873f5, #4ade80, #38bdf8);
+      border-image-slice: 1;
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+      color: #fff;
+    }
+    .note-content-container {
+  max-height: 6em;
+  overflow: hidden;
+  position: relative;
+  transition: max-height 0.3s ease;
+}
+
+.note-content-container.expanded {
+  max-height: 1000px; /* or something very large */
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  color: #0dcaf0;
+  padding: 0;
+  margin-top: 5px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+
+    .form-control {
+      border: none;
+      box-shadow: none;
+      background-color: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+    #particles-js {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: -1;
+    }
+    .checklist-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .btn-toggle-mode {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      z-index: 10;
+    }
+    .bubble-note {
+  background: radial-gradient(circle at top left, #84fab0, #8fd3f4);
+  border-radius: 50%;
+  width: 180px;
+  height: 180px;
+  padding: 20px;
+  text-align: center;
+  color: #000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  margin: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+.pinned-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 30px;
+}
+
+  </style>
+  <!-- Inside your style tag or CSS -->
+<style>
+  .note-content-container p,
+.note-content-container ul {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  transition: all 0.3s ease;
+  max-height: 6em;
+}
+
+.note-content-container p.expanded,
+.note-content-container ul.expanded {
+  -webkit-line-clamp: unset;
+  max-height: none;
+  overflow: visible;
+}
+
+
+  .read-more-btn {
+    font-size: 0.85rem;
+    color: #0dcaf0;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+</style>
+
+</head>
+<body>
+  <div id="introOverlay"><span>Welcome to Smart Notes App ✨</span></div>
+
+  <div id="particles-js"></div>
+  
+  <div class="container py-5">
+    <h1 class="text-center text-light mb-4 animated-heading">📝 Smart Notes App</h1>
+   <!-- NOTE FORM -->
+<form id="noteForm" class="mb-4">
+  <div class="row g-2">
+    <div class="col-md-4">
+      <input type="text" id="title" class="form-control" placeholder="Title" maxlength="10" required />
+    </div>
+    <div class="col-md-5">
+      <input type="text" id="content" class="form-control" placeholder="Note Content" />
+    </div>
+    <div class="col-md-2">
+      <input type="text" id="tags" class="form-control" placeholder="Tags (comma separated)" />
+    </div>
+    <!-- REMOVED: reminderInput (calendar) -->
+    <div class="col-md-1">
+      <button type="submit" class="btn btn-primary w-100">Add</button>
+    </div>
+  </div>
+</form>
+
+    <input type="text" class="form-control mb-3" id="search" placeholder="Search notes..." />
+    <h4 class="text-light">📌 Pinned Notes</h4>
+<div class="pinned-container" id="pinnedNotes"></div>
+
+<h4 class="text-light mt-4">🗂️ All Notes</h4>
+
+    <div class="row" id="notesContainer"></div>
+</div>
+
+<div class="container py-3">
+  <h4 class="text-light animated-heading">🎙️ Voice Notes</h4>
+      <div class="row g-2 mb-2">
+        <div class="col-md-5">
+          <input type="text" class="form-control" id="voiceTitle" placeholder="Voice Note Title" />
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-success w-100" onclick="startRecording()">Start</button>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-warning w-100" onclick="stopRecording()">Stop</button>
+        </div>
+      </div>
+      <ul id="voiceNotesList" class="list-group"></ul>
+    
+
+<div class="mt-4">
+  <h4 class="text-light animated-heading">🎨 Theme</h4>
+  <select id="themeSelector" class="form-control bg-dark text-white">
+    <option value="default">Default</option>
+    <option value="matrix">Dark Theme</option>
+    <option value="pastel">Pastel</option>
+    <option value="aurora">Aurora</option>
+
+  </select>
+</div>
+</div>
+
+<script>
+const notes = JSON.parse(localStorage.getItem("notes")) || [];
+const voiceNotes = JSON.parse(localStorage.getItem("voiceNotes")) || [];
+let editIndex = null;
+let mediaRecorder, audioChunks = [];
+
+const form = document.getElementById("noteForm");
+form.addEventListener("submit", e => {
+  e.preventDefault();
+  const title = document.getElementById("title").value;
+  const content = document.getElementById("content").value;
+  const tags = document.getElementById("tags").value.split(',').map(t => t.trim());
+
+  if (editIndex !== null) {
+    // Editing an existing note, preserve existing fields
+    notes[editIndex].title = title;
+    notes[editIndex].content = content;
+    notes[editIndex].tags = tags;
+    // Don't change pinned/reminder/isChecklist
+    editIndex = null;
+  } else {
+    const reminder = new Date().toISOString();
+    const isChecklist = confirm("Turn content into checklist?");
+    const note = { title, content, tags, pinned: false, reminder, isChecklist };
+    notes.push(note);
+  }
+
+  localStorage.setItem("notes", JSON.stringify(notes));
+  form.reset();
+  displayNotes();
+});
+
+
+
+
+
+
+document.getElementById("search").addEventListener("input", displayNotes);
+
+function displayNotes() {
+  const container = document.getElementById("notesContainer");
+  const pinnedContainer = document.getElementById("pinnedNotes");
+  const filter = document.getElementById("search").value.toLowerCase();
+
+  container.innerHTML = "";
+  pinnedContainer.innerHTML = "";
+
+  const pinnedNotes = notes.filter(n => n.pinned);
+  const unpinnedNotes = notes.filter(n => !n.pinned);
+
+  pinnedNotes.forEach((note, index) => {
+    if (note.title.toLowerCase().includes(filter) || note.content.toLowerCase().includes(filter)) {
+      const div = document.createElement("div");
+      div.className = "bubble-note";
+      div.innerHTML = `
+        <strong>${note.title}</strong>
+        <small>${note.tags.join(', ')}</small>
+        <br />
+        <button class="btn btn-sm btn-warning mt-1" onclick="togglePin(${notes.indexOf(note)})">Unpin</button>
+      `;
+      pinnedContainer.appendChild(div);
+    }
+  });
+
+  unpinnedNotes.forEach((note, index) => {
+    if (note.title.toLowerCase().includes(filter) || note.content.toLowerCase().includes(filter)) {
+      const card = document.createElement("div");
+      card.className = "col-md-4 mb-3";
+      card.innerHTML = `
+        <div class="note-card">
+          <h5>${note.title}</h5>
+       ${note.isChecklist
+  ? `
+    <div class="note-content-container" id="note-content-${index}">
+      <ul class="note-text">${note.content
+        .split('\n')
+        .map(line => `<li class='checklist-item'><input type='checkbox'> ${line}</li>`)
+        .join('')}</ul>
+    </div>
+    ${note.content.length > 100 ? `<button class="toggle-btn" onclick="toggleNoteContent(${index}, this)">Read More</button>` : ''}
+  `
+  : `
+    <div class="note-content-container" id="note-content-${index}">
+      <p class="note-text">${note.content}</p>
+    </div>
+    ${note.content.length > 100 ? `<button class="toggle-btn" onclick="toggleNoteContent(${index}, this)">Read More</button>` : ''}
+  `
+}
+
+
+
+
+          <small>Tags: ${note.tags.join(', ')}</small><br/>
+${note.reminder ? `<small>🕒 Created: ${new Date(note.reminder).toLocaleString()}</small><br/>` : ''}
+
+          <div class="mt-2">
+            <button class="btn btn-sm btn-warning" onclick="togglePin(${notes.indexOf(note)})">Pin</button>
+            <button class="btn btn-sm btn-info" onclick="editNote(${notes.indexOf(note)})">Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteNote(${notes.indexOf(note)})">Delete</button>
+            <button class="btn btn-sm btn-secondary" onclick="exportNotePDF('${note.title}', \`${note.content}\`)">Export PDF</button>
+          </div>
+        </div>
+      `;
+      container.appendChild(card);
+    }
+  });
+}
+
+
+function editNote(index) {
+  const note = notes[index];
+  document.getElementById("title").value = note.title;
+  document.getElementById("content").value = note.content;
+  document.getElementById("tags").value = note.tags.join(', ');
+  
+  editIndex = index;
+}
+
+
+function togglePin(index) {
+  notes[index].pinned = !notes[index].pinned;
+  localStorage.setItem("notes", JSON.stringify(notes));
+  displayNotes();
+}
+
+function generateChecklist(text) {
+  return `<ul style="padding-left: 20px; word-wrap: break-word;">${text.split('\n').map(line =>
+    `<li class='checklist-item'><input type='checkbox'> ${line}</li>`
+  ).join('')}</ul>`;
+}
+
+function toggleNoteContent(index, btn) {
+  const contentContainer = document.getElementById(`note-content-${index}`);
+  const p = contentContainer.querySelector("p");
+  const ul = contentContainer.querySelector("ul");
+
+  if (p) {
+    p.classList.toggle("expanded");
+    btn.textContent = p.classList.contains("expanded") ? "Show Less" : "Read More";
+  } else if (ul) {
+    ul.classList.toggle("expanded");
+    btn.textContent = ul.classList.contains("expanded") ? "Show Less" : "Read More";
+  }
+}
+
+
+
+
+function deleteNote(index) {
+  notes.splice(index, 1);
+  localStorage.setItem("notes", JSON.stringify(notes));
+  displayNotes();
+}
+
+function generateChecklist(text) {
+  return `<ul>${text.split('\n').map(line => `<li class='checklist-item'><input type='checkbox'> ${line}</li>`).join('')}</ul>`;
+}
+
+
+
+function displayVoiceNotes() {
+  const list = document.getElementById("voiceNotesList");
+  list.innerHTML = "";
+  voiceNotes.forEach((note, index) => {
+    const li = document.createElement("li");
+    li.className = 'list-group-item d-flex justify-content-between align-items-center';
+    li.innerHTML = `
+      <span>${note.title || 'Untitled Voice Note'}</span>
+      <audio controls src="${note.url}" class="mx-2"></audio>
+      <button class="btn btn-sm btn-danger" onclick="deleteVoiceNote(${index})">Delete</button>
+    `;
+    list.appendChild(li);
+  });
+}
+
+function deleteVoiceNote(index) {
+  voiceNotes.splice(index, 1);
+  localStorage.setItem("voiceNotes", JSON.stringify(voiceNotes));
+  displayVoiceNotes();
+}
+
+async function startRecording() {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  mediaRecorder = new MediaRecorder(stream);
+  mediaRecorder.start();
+  audioChunks = [];
+  mediaRecorder.addEventListener("dataavailable", e => audioChunks.push(e.data));
+  mediaRecorder.addEventListener("stop", () => {
+    const audioBlob = new Blob(audioChunks);
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const title = document.getElementById("voiceTitle").value;
+    voiceNotes.push({ title, url: audioUrl });
+    localStorage.setItem("voiceNotes", JSON.stringify(voiceNotes));
+    document.getElementById("voiceTitle").value = '';
+    displayVoiceNotes();
+  });
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+}
+
+// Reminder notifications
+setInterval(() => {
+  const now = new Date().toISOString().slice(0, 16);
+  notes.forEach(note => {
+    if (note.reminder === now) {
+      new Notification("Reminder", { body: note.title });
+      document.getElementById("reminderSound").play();
+    }
+  });
+}, 60000);
+
+
+if ("Notification" in window && Notification.permission !== "granted") {
+  Notification.requestPermission();
+}
+
+// ParticlesJS background
+particlesJS("particles-js", {
+  particles: {
+    number: { value: 70 },
+    color: { value: ["#ffffff", "#a0f0ed", "#ff6ec4", "#facc15"] },
+    shape: { type: ["circle", "triangle", "star"] },
+    opacity: { value: 0.6 },
+    size: { value: 4, random: true },
+    move: { enable: true, speed: 1.8 }
+  },
+  interactivity: {
+    events: {
+      onhover: { enable: true, mode: "grab" },
+      onclick: { enable: true, mode: "push" }
+    },
+    modes: {
+      grab: { distance: 140, line_linked: { opacity: 0.8 } },
+      push: { quantity: 4 }
+    }
+  },
+  retina_detect: true
+});
+
+displayNotes();
+displayVoiceNotes();
+// Chart.js script
+
+
+function applyTheme(theme) {
+  const body = document.body;
+  body.classList.remove("theme-neon", "theme-matrix", "theme-pastel" , "theme-aurora");
+  if (theme !== "default") {
+    body.classList.add("theme-" + theme);
+  }
+  localStorage.setItem("theme", theme);
+}
+
+document.getElementById("themeSelector").addEventListener("change", (e) => {
+  applyTheme(e.target.value);
+});
+
+const savedTheme = localStorage.getItem("theme") || "default";
+applyTheme(savedTheme);
+
+document.getElementById("themeSelector").value = savedTheme;
+
+
+
+displayNotes();
+new Sortable(document.getElementById("notesContainer"), {
+  animation: 150,
+  ghostClass: 'sortable-ghost',
+  onEnd: function (evt) {
+    const movedNote = notes.splice(evt.oldIndex, 1)[0];
+    notes.splice(evt.newIndex, 0, movedNote);
+    localStorage.setItem("notes", JSON.stringify(notes));
+    displayNotes();
+  }
+});
+function exportNotePDF(title, content) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.text(`Title: ${title}\n\nContent:\n${content}`, 10, 10);
+  doc.save(`${title}.pdf`);
+}
+
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  window.addEventListener("DOMContentLoaded", () => {
+  const intro = document.getElementById("introOverlay");
+
+  // Start cinematic fade-out after delay
+  setTimeout(() => {
+    intro.classList.add("fade-out");
+
+    // Safety fallback in case 'animationend' never fires (mobile bug)
+    const forceHide = setTimeout(() => {
+      intro.classList.add("hidden");
+    }, 1800); // animation duration + buffer
+
+    // Ideal path
+    intro.addEventListener("animationend", () => {
+      clearTimeout(forceHide); // clear fallback
+      intro.classList.add("hidden");
+    }, { once: true });
+
+  }, 2000);
+});
+// Extra hard fallback after 3 seconds (in case both fail for any reason)
+setTimeout(() => {
+  const intro = document.getElementById("introOverlay");
+  if (intro && !intro.classList.contains("hidden")) {
+    intro.classList.add("hidden");
+  }
+}, 3000);
+
+
+</script>
+
+
+
+<audio id="reminderSound" src="https://www.soundjay.com/buttons/sounds/beep-07.mp3" preload="auto"></audio>
+
+</body>
+</html>
